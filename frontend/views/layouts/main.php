@@ -34,7 +34,16 @@ AppAsset::register($this);
             'class' => 'navbar navbar-expand-md navbar-light bg-light fixed-top shadow-sm',
         ],
     ]);
+
     $menuItems = [];
+    if(Yii::$app->user->identity->username === 'admin'){
+        $menuItems = [
+            ['label' => 'Users', 'url' => ['/user/index']],
+            ['label' => 'Subjects', 'url' => ['/subject/index']],
+            ['label' => 'Tests', 'url' => ['/test/index']],
+            ['label' => 'Questions', 'url' => ['/question/index']],
+        ];
+    }
 
     echo Nav::widget([
         'options' => ['class' => 'navbar-nav me-auto mb-2 mb-md-0'],

@@ -81,11 +81,19 @@ class SiteController extends Controller
             return $this->redirect(['site/login']);
         }
 
+        if(Yii::$app->user->identity->username === 'admin'){
+            return $this->redirect(['site/admin']);
+        }
+
         return $this->render('index');
     }
 
    public function actionAdmin()
     {
+        if(Yii::$app->user->identity->username === 'admin'){
+            return $this->redirect(['user/index']);
+        }
+
         $model = new \yii\base\DynamicModel(['password']); // Temporary model for the form
         $model->addRule('password', 'required', ['message' => 'Толтырыңыз!']);
 
@@ -96,7 +104,7 @@ class SiteController extends Controller
 
             if ($admin && Yii::$app->security->validatePassword($model->password, $admin->password_hash)) {
                 Yii::$app->user->login($admin, 3600 * 24 * 30);
-                return $this->redirect(['index']);
+                return $this->redirect(['user/index']);
             } else {
                 $model->addError('password', 'Құпия сөз қате!');
             }

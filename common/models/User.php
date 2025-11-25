@@ -4,36 +4,70 @@ namespace common\models;
 
 use Yii;
 use yii\base\NotSupportedException;
-use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
 
-/**
- * User model
- *
- * @property integer $id
- * @property string $username
- * @property string $password_hash
- * @property string $password_reset_token
- * @property string $verification_token
- * @property string $email
- * @property string $auth_key
- * @property integer $status
- * @property integer $created_at
- * @property integer $updated_at
- * @property string $password write-only password
- */
 class User extends ActiveRecord implements IdentityInterface
 {
+
+
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return '{{%user}}';
+        return 'user';
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function rules()
+    {
+        return [
+            [['password_hash'], 'default', 'value' => null],
+            [['auth_key'], 'required'],
+            [['password_hash'], 'string', 'max' => 255],
+            [['auth_key'], 'string', 'max' => 32],
+
+            [['username'], 'required', 'message' => 'Толтырыңыз!'],
+            ['username', 'match', 'pattern' => '/^\d{12}$/', 'message' => 'ЖСН қате!'],
+            [['username'], 'unique'],
+            
+            // Updated name rules
+            ['name', 'required', 'message' => 'Толтырыңыз!'],
+            ['name', 'string', 'max' => 255, 'tooLong' => 'Тым ұзын!'],
+            ['name', 'match', 
+                'pattern' => '/^[А-Яа-яЁё]+(?:\s[А-Яа-яЁё]+)+$/u', 
+                'message' => 'Мысалы: Мухаммедьяров Бейбарыс'
+            ],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'name' => 'Name',
+            'username' => 'Username',
+            'auth_key' => 'Auth Key',
+            'password_hash' => 'Password Hash',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     * @return \common\models\query\UserQuery the active query used by this AR class.
+     */
+    public static function find()
+    {
+        return new \common\models\query\UserQuery(get_called_class());
+    }
+
+        /**
      * {@inheritdoc}
      */
     public static function findIdentity($id)
@@ -58,52 +92,6 @@ class User extends ActiveRecord implements IdentityInterface
     public static function findByUsername($username)
     {
         return static::findOne(['username' => $username]);
-    }
-
-    /**
-     * Finds user by password reset token
-     *
-     * @param string $token password reset token
-     * @return static|null
-     */
-    public static function findByPasswordResetToken($token)
-    {
-        if (!static::isPasswordResetTokenValid($token)) {
-            return null;
-        }
-
-        return static::findOne([
-            'password_reset_token' => $token
-        ]);
-    }
-
-    /**
-     * Finds user by verification email token
-     *
-     * @param string $token verify email token
-     * @return static|null
-     */
-    public static function findByVerificationToken($token) {
-        return static::findOne([
-            'verification_token' => $token
-        ]);
-    }
-
-    /**
-     * Finds out if password reset token is valid
-     *
-     * @param string $token password reset token
-     * @return bool
-     */
-    public static function isPasswordResetTokenValid($token)
-    {
-        if (empty($token)) {
-            return false;
-        }
-
-        $timestamp = (int) substr($token, strrpos($token, '_') + 1);
-        $expire = Yii::$app->params['user.passwordResetTokenExpire'];
-        return $timestamp + $expire >= time();
     }
 
     /**
@@ -157,29 +145,5 @@ class User extends ActiveRecord implements IdentityInterface
     public function generateAuthKey()
     {
         $this->auth_key = Yii::$app->security->generateRandomString();
-    }
-
-    /**
-     * Generates new password reset token
-     */
-    public function generatePasswordResetToken()
-    {
-        $this->password_reset_token = Yii::$app->security->generateRandomString() . '_' . time();
-    }
-
-    /**
-     * Generates new token for email verification
-     */
-    public function generateEmailVerificationToken()
-    {
-        $this->verification_token = Yii::$app->security->generateRandomString() . '_' . time();
-    }
-
-    /**
-     * Removes password reset token
-     */
-    public function removePasswordResetToken()
-    {
-        $this->password_reset_token = null;
     }
 }
