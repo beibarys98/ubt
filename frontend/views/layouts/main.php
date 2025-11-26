@@ -36,7 +36,7 @@ AppAsset::register($this);
     ]);
 
     $menuItems = [];
-    if(Yii::$app->user->identity->username === 'admin'){
+    if (!Yii::$app->user->isGuest && Yii::$app->user->identity->username === 'admin') {
         $menuItems = [
             ['label' => 'Users', 'url' => ['/user/index']],
             ['label' => 'Subjects', 'url' => ['/subject/index']],

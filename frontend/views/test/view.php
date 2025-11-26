@@ -18,8 +18,10 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <?php foreach ($model->questions as $question): ?>
         <div class="question-item">
-            <?= Html::img(Url::to('@web/' . $question->img_path)) ?>
+            <?= Html::img(Url::to('@web/' . $question->img_path), ['style' => 'max-width: 80vw; max-height: 80vh;']) ?>
         </div>
+        <br>
+        <br>
     <?php endforeach; ?>
 
 </div>

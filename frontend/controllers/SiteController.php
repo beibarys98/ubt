@@ -90,7 +90,8 @@ class SiteController extends Controller
 
    public function actionAdmin()
     {
-        if(Yii::$app->user->identity->username === 'admin'){
+        if (!Yii::$app->user->isGuest && Yii::$app->user->identity->username === 'admin') {
+
             return $this->redirect(['user/index']);
         }
 
