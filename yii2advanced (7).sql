@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.2
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Хост: mysql
--- Время создания: Ноя 25 2025 г., 12:59
+-- Время создания: Ноя 26 2025 г., 18:59
 -- Версия сервера: 5.7.44
--- Версия PHP: 8.2.27
+-- Версия PHP: 8.2.8
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -99,7 +99,47 @@ INSERT INTO `question` (`id`, `test_id`, `type`, `img_path`, `correct`) VALUES
 (117, 6, 'single', 'uploads/questions/6925a3eeef6cd_crop_7_36.jpg', 'C'),
 (118, 6, 'multiple', 'uploads/questions/6925a3eef2d6c_crop_8_37.jpg', 'BE'),
 (119, 6, 'multiple', 'uploads/questions/6925a3ef01186_crop_8_38.jpg', 'CF'),
-(120, 6, 'multiple', 'uploads/questions/6925a3ef031ab_crop_8_39.jpg', 'AD');
+(120, 6, 'multiple', 'uploads/questions/6925a3ef031ab_crop_8_39.jpg', 'AD'),
+(121, 7, 'single', 'uploads/questions/69274a86ccc7d_10.jpg', 'C'),
+(122, 7, 'single', 'uploads/questions/69274a86e3928_11.jpg', 'A'),
+(123, 7, 'single', 'uploads/questions/69274a86e7ecf_12.jpg', 'A'),
+(124, 7, 'single', 'uploads/questions/69274a86ec436_13.jpg', 'A'),
+(125, 7, 'single', 'uploads/questions/69274a86f1419_14.jpg', 'A'),
+(126, 7, 'single', 'uploads/questions/69274a8701548_15.jpg', 'D'),
+(127, 7, 'single', 'uploads/questions/69274a87058d8_16.jpg', 'D'),
+(128, 7, 'single', 'uploads/questions/69274a870a248_17.jpg', 'C'),
+(129, 7, 'single', 'uploads/questions/69274a870e8e4_18.jpg', 'D'),
+(130, 7, 'single', 'uploads/questions/69274a8713995_19.jpg', 'C'),
+(131, 7, 'single', 'uploads/questions/69274a8717691_20.jpg', 'B'),
+(132, 7, 'single', 'uploads/questions/69274a871b61d_21.jpg', 'C'),
+(133, 7, 'single', 'uploads/questions/69274a871fbf2_22.jpg', 'B'),
+(134, 7, 'single', 'uploads/questions/69274a87246ba_23.jpg', 'C'),
+(135, 7, 'single', 'uploads/questions/69274a8729082_24.jpg', 'B'),
+(136, 7, 'single', 'uploads/questions/69274a872e42c_25.jpg', 'D'),
+(137, 7, 'single', 'uploads/questions/69274a87333ea_26.jpg', 'A'),
+(138, 7, 'single', 'uploads/questions/69274a8738d3f_27.jpg', 'B'),
+(139, 7, 'single', 'uploads/questions/69274a873d97c_28.jpg', 'D'),
+(140, 7, 'single', 'uploads/questions/69274a8743300_29.jpg', 'B'),
+(141, 7, 'single', 'uploads/questions/69274a8749cfb_30.jpg', 'A'),
+(142, 7, 'single', 'uploads/questions/69274a874f12b_31.jpg', 'D'),
+(143, 7, 'single', 'uploads/questions/69274a8754a6a_32.jpg', 'A'),
+(144, 7, 'single', 'uploads/questions/69274a875aff4_33.jpg', 'A'),
+(145, 7, 'single', 'uploads/questions/69274a8763a5c_34.jpg', 'D'),
+(146, 7, 'single', 'uploads/questions/69274a8769589_35.jpg', 'A'),
+(147, 7, 'single', 'uploads/questions/69274a8770007_36.jpg', 'B'),
+(148, 7, 'single', 'uploads/questions/69274a8776423_37.jpg', 'A'),
+(149, 7, 'single', 'uploads/questions/69274a877c2a4_38.jpg', 'D'),
+(150, 7, 'single', 'uploads/questions/69274a8781d42_39.jpg', 'B'),
+(151, 7, 'match', 'uploads/questions/69274a8786663_40.jpg', 'A-1 B-2'),
+(152, 7, 'match', 'uploads/questions/69274a878ae33_41.jpg', 'A-2 B-3'),
+(153, 7, 'match', 'uploads/questions/69274a878ff9a_42.jpg', 'A-3 B-4'),
+(154, 7, 'match', 'uploads/questions/69274a8794ea0_43.jpg', 'A-1 B-3'),
+(155, 7, 'match', 'uploads/questions/69274a8798bb6_44.jpg', 'A-3 B-1'),
+(156, 7, 'multiple', 'uploads/questions/69274a879cf75_45.jpg', 'AEF'),
+(157, 7, 'multiple', 'uploads/questions/69274a87a0f1c_46.jpg', 'BE'),
+(158, 7, 'multiple', 'uploads/questions/69274a87a4c04_47.jpg', 'CDE'),
+(159, 7, 'multiple', 'uploads/questions/69274a87a8056_48.jpg', 'BDE'),
+(160, 7, 'multiple', 'uploads/questions/69274a87ab868_49.jpg', 'ABC');
 
 -- --------------------------------------------------------
 
@@ -117,8 +157,9 @@ CREATE TABLE `subject` (
 --
 
 INSERT INTO `subject` (`id`, `title`) VALUES
-(1, 'ХимБио'),
-(2, 'ФизМат');
+(1, 'Биология'),
+(2, 'Математика'),
+(3, 'Информатика');
 
 -- --------------------------------------------------------
 
@@ -138,7 +179,8 @@ CREATE TABLE `test` (
 --
 
 INSERT INTO `test` (`id`, `subject_id`, `version`, `status`) VALUES
-(6, 2, 1, 'new');
+(6, 2, 1, 'new'),
+(7, 3, 1, 'new');
 
 -- --------------------------------------------------------
 
@@ -209,19 +251,19 @@ ALTER TABLE `user`
 -- AUTO_INCREMENT для таблицы `question`
 --
 ALTER TABLE `question`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=161;
 
 --
 -- AUTO_INCREMENT для таблицы `subject`
 --
 ALTER TABLE `subject`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT для таблицы `test`
 --
 ALTER TABLE `test`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT для таблицы `user`
