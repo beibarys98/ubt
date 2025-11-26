@@ -29,8 +29,7 @@ $this->params['breadcrumbs'][] = $this->title;
     ]) ?>
 
     <?= $form->field($model, 'answersText')->textarea([
-        'rows' => 10, 
-        'placeholder' => "Paste answers here, one per line. E.g:\nC\nB\nD\nC\nC\nA-2 B-4\n..."
+        'rows' => 10
     ]) ?>
 
     <div class="form-group">

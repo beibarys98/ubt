@@ -97,12 +97,16 @@ class TestController extends Controller
 
                         // Determine correct answer from pasted text
                         $line = isset($answers[$index]) ? trim($answers[$index]) : null;
+
                         if ($line) {
-                            $correctAnswer = preg_replace('/^\d+\.\s*/', '', $line);
+                            // Remove leading number with OPTIONAL dot and OPTIONAL space
+                            $correctAnswer = preg_replace('/^\d+[\.\)]?\s*/', '', $line);
                         } else {
                             $correctAnswer = null;
                         }
+
                         $question->correct = $correctAnswer;
+
 
                         // Determine question type based on answer format
                         if (!$correctAnswer) {
