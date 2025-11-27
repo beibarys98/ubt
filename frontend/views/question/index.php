@@ -26,13 +26,25 @@ $this->params['breadcrumbs'][] = $this->title;
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
+        'pager' => [
+            'class' => \yii\bootstrap5\LinkPager::className(),
+        ],
         'columns' => [
-            ['class' => 'yii\grid\SerialColumn'],
-
-            'id',
-            'test_id',
+            [
+                'attribute' => 'id',
+                'options' => ['style' => 'width:5%;'],
+            ],
+            [
+                'attribute' => 'test_id',
+                'value' => function($model) {
+                    return $model->test->subject->title . ' - ' . $model->test->version;
+                },
+            ],
             'img_path',
-            'correct',
+            [
+                'attribute' => 'correct',
+                'options' => ['style' => 'width:10%;'],
+            ],
             [
                 'class' => ActionColumn::className(),
                 'urlCreator' => function ($action, Question $model, $key, $index, $column) {

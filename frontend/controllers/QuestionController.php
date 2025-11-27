@@ -7,6 +7,7 @@ use common\models\search\QuestionSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use Yii;
 
 /**
  * QuestionController implements the CRUD actions for Question model.
@@ -93,14 +94,26 @@ class QuestionController extends Controller
     {
         $model = $this->findModel($id);
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        if ($model->load(Yii::$app->request->post())) {
+
+            // Handle file upload
+            $model->file = \yii\web\UploadedFile::getInstance($model, 'file');
+            if ($model->file) {
+                $uploadPath = 'uploads/questions/' . time() . '_' . $model->file->name;
+                $model->file->saveAs($uploadPath);
+                $model->img_path = $uploadPath; // store the file path in DB
+            }
+
+            if ($model->save(false)) {
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
         }
 
         return $this->render('update', [
             'model' => $model,
         ]);
     }
+
 
     /**
      * Deletes an existing Question model.

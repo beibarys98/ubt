@@ -49,6 +49,21 @@ class TestController extends Controller
         ]);
     }
 
+    public function actionCropper()
+    {
+        // Path to the file
+        $file = Yii::getAlias('@webroot/MBcropper/MBcropper.exe');
+
+        // Check if the file exists
+        if (!file_exists($file)) {
+            throw new \yii\web\NotFoundHttpException('The requested file does not exist.');
+        }
+
+        // Send the file as a download
+        return Yii::$app->response->sendFile($file, 'MBcropper.exe');
+    }
+
+
     /**
      * Displays a single Test model.
      * @param int $id ID
@@ -61,6 +76,16 @@ class TestController extends Controller
             'model' => $this->findModel($id),
         ]);
     }
+
+    public function actionStatus($id, $status)
+    {
+        $model = Test::findOne($id);
+        $model->status = $status;
+        $model->save(false);
+
+        return $this->redirect(Yii::$app->request->referrer);
+    }
+
 
     /**
      * Creates a new Test model.
@@ -86,7 +111,7 @@ class TestController extends Controller
                         if (!is_dir($uploadDir)) {
                             mkdir($uploadDir, 0755, true);
                         }
-                        $fileName = uniqid() . '_' . $file->name;
+                        $fileName = time() . '_' . $file->name;
                         $filePath = $uploadDir . '/' . $fileName;
                         $file->saveAs($filePath);
 
@@ -101,6 +126,7 @@ class TestController extends Controller
                         if ($line) {
                             // Remove leading number with OPTIONAL dot and OPTIONAL space
                             $correctAnswer = preg_replace('/^\d+[\.\)]?\s*/', '', $line);
+                            $correctAnswer = strtoupper($correctAnswer);
                         } else {
                             $correctAnswer = null;
                         }

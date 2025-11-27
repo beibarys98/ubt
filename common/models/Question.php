@@ -16,7 +16,7 @@ use Yii;
  */
 class Question extends \yii\db\ActiveRecord
 {
-
+    public $file;
 
     /**
      * {@inheritdoc}
@@ -32,6 +32,7 @@ class Question extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
+            [['file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png, jpg, jpeg'],
             [['img_path'], 'default', 'value' => null],
             [['test_id', 'correct', 'type'], 'required'],
             [['test_id'], 'integer'],

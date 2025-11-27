@@ -26,6 +26,9 @@ $this->params['breadcrumbs'][] = $this->title;
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
+        'pager' => [
+            'class' => \yii\bootstrap5\LinkPager::className(),
+        ],
         'columns' => [
             ['attribute' => 'id', 'options' => ['style' => 'width:5%;']],
             'title',

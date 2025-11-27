@@ -16,12 +16,30 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <h1><?= Html::encode($this->title) ?></h1>
 
+    <div class="my-5">
+        <?php
+        $statuses = ['new', 'ready', 'public', 'finished'];
+
+        foreach ($statuses as $status) {
+            echo Html::a(
+                ucfirst($status), // Button label
+                ['status', 'id' => $model->id, 'status' => $status],
+                ['class' => 'btn ' . ($model->status === $status ? 'btn-success' : 'btn-outline-success')]
+            ) . ' ';
+        }
+        ?>
+
+    </div>
+
     <?php foreach ($model->questions as $question): ?>
-        <div class="question-item">
-            <?= Html::img(Url::to('@web/' . $question->img_path), ['style' => 'max-width: 80vw; max-height: 80vh;']) ?>
+        <div class="question-item mb-5">
+            <?= Html::img(Url::to('@web/' . $question->img_path), ['style' => 'max-width: 80vw; max-height: 80vh; border: 1px solid black; border-radius: 19px;']) ?>
+            <div style="font-size: 1.5rem;">
+                <?= Html::a('Өзгерту', ['question/update', 'id' => $question->id], ['class' => 'btn btn-outline-dark me-5']); ?>
+                <strong>Жауабы: <?= Html::encode($question->correct) ?></strong>
+                
+            </div>
         </div>
-        <br>
-        <br>
     <?php endforeach; ?>
 
 </div>

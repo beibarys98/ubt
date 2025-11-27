@@ -9,7 +9,7 @@ use yii\web\IdentityInterface;
 
 class User extends ActiveRecord implements IdentityInterface
 {
-
+    public $subjects;
 
     /**
      * {@inheritdoc}
@@ -25,6 +25,9 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
+            ['subjects', 'each', 'rule' => ['integer']],
+            ['subjects', 'validateMaxTwo'],
+
             [['password_hash'], 'default', 'value' => null],
             [['auth_key'], 'required'],
             [['password_hash'], 'string', 'max' => 255],
@@ -42,6 +45,13 @@ class User extends ActiveRecord implements IdentityInterface
                 'message' => 'Мысалы: Мухаммедьяров Бейбарыс'
             ],
         ];
+    }
+
+    public function validateMaxTwo($attribute)
+    {
+        if (is_array($this->$attribute) && count($this->$attribute) > 2) {
+            $this->addError($attribute, 'You can select a maximum of 2 subjects.');
+        }
     }
 
     /**

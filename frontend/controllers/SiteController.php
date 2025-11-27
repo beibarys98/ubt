@@ -85,7 +85,13 @@ class SiteController extends Controller
             return $this->redirect(['site/admin']);
         }
 
-        return $this->render('index');
+        $model = User::findOne(Yii::$app->user->id);
+        $subjects = \common\models\Subject::find()->select(['title', 'id'])->indexBy('id')->column();
+
+        return $this->render('index', [
+            'model' => $model,
+            'subjects' => $subjects,
+        ]);
     }
 
    public function actionAdmin()

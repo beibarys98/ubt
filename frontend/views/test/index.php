@@ -18,7 +18,8 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Create Test', ['create'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Create Test', ['create'], ['class' => 'btn btn-success me-5']) ?>
+        <?= Html::a('Download MBcropper', ['cropper'], ['class' => 'btn btn-danger']) ?>
     </p>
 
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
@@ -26,9 +27,17 @@ $this->params['breadcrumbs'][] = $this->title;
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
+        'pager' => [
+            'class' => \yii\bootstrap5\LinkPager::className(),
+        ],
         'columns' => [
             ['attribute' => 'id', 'options' => ['style' => 'width:5%;']],
-            'subject_id',
+            [
+                'attribute' => 'subject_id',
+                'value' => function($model) {
+                    return $model->subject->title;
+                },
+            ],
             ['attribute' => 'version', 'options' => ['style' => 'width:5%;']],
             'status',
             [
