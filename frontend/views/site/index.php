@@ -2,7 +2,7 @@
 
 /** @var yii\web\View $this */
 /** @var yii\bootstrap5\ActiveForm $form */
-/** @var \common\models\LoginForm $model */
+/** @var \common\models\User $model */
 
 use yii\bootstrap5\Html;
 use yii\bootstrap5\ActiveForm;
@@ -16,7 +16,14 @@ $this->title = 'UBT';
 
                 <?= $form->field($model, 'name')->textInput(['placeholder' => 'Есіміңіз'])->label(false) ?>
 
-                <?= $form->field($model, 'subjects')->checkboxList($subjects, ['itemOptions' => ['class' => 'subject-checkbox']])->label(false) ?>
+                <?= $form->field($model, 'subjects')
+                    ->checkboxList($subjects)
+                    ->label(false)
+                    ->error() ?>
+
+                <div id="subjects-counter" style="margin-bottom:10px; font-weight:bold;">
+                    0 / 2 таңдалды
+                </div>
 
                 <div class="form-group">
                     <?= Html::submitButton('Тестті бастау', ['class' => 'btn btn-primary w-100', 'name' => 'login-button']) ?>
@@ -27,20 +34,33 @@ $this->title = 'UBT';
 </div>
 
 <?php
-$this->registerJs("
-    const boxes = document.querySelectorAll('#loginform-subjects input[type=\"checkbox\"]');
+$this->registerJs(<<<JS
+const maxSubjects = 2;
+const counter = document.getElementById('subjects-counter');
+const checkboxes = document.querySelectorAll('input[name="User[subjects][]"]');
 
-    boxes.forEach(box => {
-        box.addEventListener('change', function () {
-            const checked = document.querySelectorAll('#loginform-subjects input[type=\"checkbox\"]:checked');
+function updateCounter() {
+    let checkedCount = 0;
+    checkboxes.forEach(cb => { if(cb.checked) checkedCount++; });
+    counter.textContent = checkedCount + ' / ' + maxSubjects + ' таңдалды';
+}
 
-            if (checked.length > 2) {
-                this.checked = false;
-                alert('You can only select up to 2 subjects!');
-            }
-        });
+// initial count
+updateCounter();
+
+checkboxes.forEach(cb => {
+    cb.addEventListener('change', function(e) {
+        let checkedCount = 0;
+        checkboxes.forEach(cb => { if(cb.checked) checkedCount++; });
+
+        if (checkedCount > maxSubjects) {
+            e.target.checked = false;
+            alert('Тек 2 пән ғана таңдауға болады!');
+        }
+
+        updateCounter();
     });
-");
+});
+JS
+);
 ?>
-
-

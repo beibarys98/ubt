@@ -84,9 +84,22 @@ class SiteController extends Controller
         if(Yii::$app->user->identity->username === 'admin'){
             return $this->redirect(['site/admin']);
         }
-
+        
         $model = User::findOne(Yii::$app->user->id);
-        $subjects = \common\models\Subject::find()->select(['title', 'id'])->indexBy('id')->column();
+        $subjects = \common\models\Subject::find()
+            ->select(['title', 'id'])
+            ->andWhere(['not in', 'title', [
+                'Оқу Сауаттылығы',
+                'Математикалық Сауаттылық',
+                'Қазақстан Тарихы'
+            ]])
+            ->indexBy('id')
+            ->column();
+
+        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+
+            return $this->redirect(['test']);
+        }
 
         return $this->render('index', [
             'model' => $model,
@@ -94,7 +107,16 @@ class SiteController extends Controller
         ]);
     }
 
-   public function actionAdmin()
+    public function actionTest()
+    {
+        if(Yii::$app->user->isGuest){
+            return $this->redirect(['site/login']);
+        }
+
+        return $this->render('test');
+    }
+
+    public function actionAdmin()
     {
         if (!Yii::$app->user->isGuest && Yii::$app->user->identity->username === 'admin') {
 

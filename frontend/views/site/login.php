@@ -14,7 +14,7 @@ $this->title = 'UBT';
     <div class="card shadow p-3" style="margin: 0 auto; width: 300px;">
         <?php $form = ActiveForm::begin(['id' => 'login-form']); ?>
 
-                <?= $form->field($model, 'username')->textInput(['placeholder' => 'ЖСН'])->label(false) ?>
+                <?= $form->field($model, 'username')->textInput(['autofocus' => true, 'placeholder' => 'ЖСН'])->label(false) ?>
                 <?= $form->field($model, 'check')->textInput(['placeholder' => 'ЖСН қайтадан'])->label(false) ?>
 
                 <div class="form-group">

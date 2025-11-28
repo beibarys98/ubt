@@ -25,7 +25,7 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
-            ['subjects', 'each', 'rule' => ['integer']],
+            ['subjects', 'safe'],
             ['subjects', 'validateMaxTwo'],
 
             [['password_hash'], 'default', 'value' => null],
@@ -49,8 +49,11 @@ class User extends ActiveRecord implements IdentityInterface
 
     public function validateMaxTwo($attribute)
     {
-        if (is_array($this->$attribute) && count($this->$attribute) > 2) {
-            $this->addError($attribute, 'You can select a maximum of 2 subjects.');
+        $value = $this->$attribute;
+        $count = is_array($value) ? count($value) : 0;
+
+        if ($count !== 2) {
+            $this->addError($attribute, 'Екі пән таңдаңыз!');
         }
     }
 

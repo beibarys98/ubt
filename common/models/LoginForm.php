@@ -10,7 +10,6 @@ use yii\base\Model;
  */
 class LoginForm extends Model
 {
-    public $name;
     public $username;
     public $check;
     public $password;
@@ -23,7 +22,6 @@ class LoginForm extends Model
             [['username', 'check'], 'required', 'message' => 'Толтырыңыз!'],
             ['username', 'match', 'pattern' => '/^\d{12}$/', 'message' => 'ЖСН қате!'],
             ['check', 'compare', 'compareAttribute' => 'username', 'message' => 'ЖСН қате!'],
-            ['name', 'string', 'max' => 255, 'tooLong' => 'Тым ұзын!'],
         ];
     }
 

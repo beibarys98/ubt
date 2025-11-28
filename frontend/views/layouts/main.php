@@ -41,6 +41,7 @@ AppAsset::register($this);
             ['label' => 'Users', 'url' => ['/user/index']],
             ['label' => 'Subjects', 'url' => ['/subject/index']],
             ['label' => 'Tests', 'url' => ['/test/index']],
+            ['label' => 'Participants', 'url' => ['/user-test/index']]
         ];
     }
 
