@@ -25,7 +25,8 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
-            ['subjects', 'safe'],
+            ['subjects', 'required', 'message' => 'Екі пән таңдаңыз!'],
+            ['subjects', 'each', 'rule' => ['integer']],
             ['subjects', 'validateMaxTwo'],
 
             [['password_hash'], 'default', 'value' => null],

@@ -16,14 +16,9 @@ $this->title = 'UBT';
 
                 <?= $form->field($model, 'name')->textInput(['placeholder' => 'Есіміңіз'])->label(false) ?>
 
-                <?= $form->field($model, 'subjects')
+                <?= $form->field($model, 'subjects[]')
                     ->checkboxList($subjects)
-                    ->label(false)
-                    ->error() ?>
-
-                <div id="subjects-counter" style="margin-bottom:10px; font-weight:bold;">
-                    0 / 2 таңдалды
-                </div>
+                    ->label(false) ?>
 
                 <div class="form-group">
                     <?= Html::submitButton('Тестті бастау', ['class' => 'btn btn-primary w-100', 'name' => 'login-button']) ?>
@@ -36,31 +31,28 @@ $this->title = 'UBT';
 <?php
 $this->registerJs(<<<JS
 const maxSubjects = 2;
-const counter = document.getElementById('subjects-counter');
 const checkboxes = document.querySelectorAll('input[name="User[subjects][]"]');
 
-function updateCounter() {
+function updateState() {
     let checkedCount = 0;
-    checkboxes.forEach(cb => { if(cb.checked) checkedCount++; });
-    counter.textContent = checkedCount + ' / ' + maxSubjects + ' таңдалды';
+
+    checkboxes.forEach(cb => {
+        if (cb.checked) checkedCount++;
+    });
+
+    checkboxes.forEach(cb => {
+        if (!cb.checked) {
+            cb.disabled = checkedCount >= maxSubjects;
+        }
+    });
 }
 
-// initial count
-updateCounter();
-
 checkboxes.forEach(cb => {
-    cb.addEventListener('change', function(e) {
-        let checkedCount = 0;
-        checkboxes.forEach(cb => { if(cb.checked) checkedCount++; });
-
-        if (checkedCount > maxSubjects) {
-            e.target.checked = false;
-            alert('Тек 2 пән ғана таңдауға болады!');
-        }
-
-        updateCounter();
-    });
+    cb.addEventListener('change', updateState);
 });
+
+updateState();
 JS
 );
-?>
+
+

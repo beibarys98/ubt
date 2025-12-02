@@ -82,7 +82,7 @@ class SiteController extends Controller
         }
 
         if(Yii::$app->user->identity->username === 'admin'){
-            return $this->redirect(['site/admin']);
+            return $this->redirect(['user/index']);
         }
         
         $model = User::findOne(Yii::$app->user->id);
@@ -97,6 +97,36 @@ class SiteController extends Controller
             ->column();
 
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+
+            $model->save(false);
+
+            $defaultSubjectIds = \common\models\Subject::find()
+                ->select('id')
+                ->andWhere(['title' => [
+                    'Оқу Сауаттылығы',
+                    'Математикалық Сауаттылық',
+                    'Қазақстан Тарихы'
+                ]])
+                ->column();
+            $selectedSubjectIds = $model->subjects ?? [];
+            $allSubjectIds = array_merge($defaultSubjectIds, $selectedSubjectIds);
+
+            foreach ($allSubjectIds as $subjectId) {
+                $test = \common\models\Test::find()
+                    ->andWhere(['subject_id' => $subjectId])
+                    ->andWhere(['status' => 'public'])
+                    ->orderBy(new \yii\db\Expression('RAND()')) // MySQL
+                    ->one();
+                
+                if (!$test) {
+                    continue;
+                }
+
+                $userTest = new \common\models\UserTest();
+                $userTest->user_id = $model->id;
+                $userTest->test_id = $test->id;
+                $userTest->save(false);
+            }
 
             return $this->redirect(['test']);
         }

@@ -5,5 +5,5 @@
 $this->title = 'UBT';
 ?>
 <div class="site-login">
-    hello world
+    test page
 </div>
