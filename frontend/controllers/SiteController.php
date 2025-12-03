@@ -95,7 +95,14 @@ class SiteController extends Controller
             ->andWhere(['user_id' => $model->id])
             ->count();
         if ($userTestCount == 5) {
-            return $this->redirect(['test']);
+            $firstUserTest = \common\models\UserTest::find()
+                ->andWhere(['user_id' => $model->id])
+                ->with('test.questions')
+                ->orderBy('id ASC') // take the first inserted
+                ->one();
+
+            $firstQuestionId = $firstUserTest->test->questions[0]->id ?? null;
+            return $this->redirect(['test', 'id' => $firstQuestionId]); // All tests completed
         }
 
         // Fetch subjects excluding the default ones
