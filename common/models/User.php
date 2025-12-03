@@ -9,7 +9,8 @@ use yii\web\IdentityInterface;
 
 class User extends ActiveRecord implements IdentityInterface
 {
-    public $subjects;
+    public $subject_1;
+    public $subject_2;
 
     /**
      * {@inheritdoc}
@@ -25,9 +26,10 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
-            ['subjects', 'required', 'message' => 'Екі пән таңдаңыз!'],
-            ['subjects', 'each', 'rule' => ['integer']],
-            ['subjects', 'validateMaxTwo'],
+            ['subject_1', 'required', 'message' => 'Пәнді таңдаңыз!'],
+            ['subject_2', 'required', 'message' => 'Пәнді таңдаңыз!'],
+            ['subject_2', 'compare', 'compareAttribute' => 'subject_1', 'operator' => '!=', 'message' => 'Пәндер бірдей!'],
+            ['subject_1', 'compare', 'compareAttribute' => 'subject_2', 'operator' => '!=', 'message' => 'Пәндер бірдей!'],
 
             [['password_hash'], 'default', 'value' => null],
             [['auth_key'], 'required'],
@@ -42,20 +44,10 @@ class User extends ActiveRecord implements IdentityInterface
             ['name', 'required', 'message' => 'Толтырыңыз!'],
             ['name', 'string', 'max' => 255, 'tooLong' => 'Тым ұзын!'],
             ['name', 'match', 
-                'pattern' => '/^[А-Яа-яЁё]+(?:\s[А-Яа-яЁё]+)+$/u', 
+                'pattern' => '/^[А-Яа-яЁёӘәІіҢңҒғҮүҰұҚқӨөҺһ-]+(?:\s[А-Яа-яЁёӘәІіҢңҒғҮүҰұҚқӨөҺһ-]+)+$/u', 
                 'message' => 'Мысалы: Мухаммедьяров Бейбарыс'
             ],
         ];
-    }
-
-    public function validateMaxTwo($attribute)
-    {
-        $value = $this->$attribute;
-        $count = is_array($value) ? count($value) : 0;
-
-        if ($count !== 2) {
-            $this->addError($attribute, 'Екі пән таңдаңыз!');
-        }
     }
 
     /**

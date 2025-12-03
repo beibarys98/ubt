@@ -77,15 +77,28 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
+        // Guest user redirection
         if(Yii::$app->user->isGuest){
             return $this->redirect(['site/login']);
         }
 
+        // Admin user redirection
         if(Yii::$app->user->identity->username === 'admin'){
             return $this->redirect(['user/index']);
         }
         
+        // Regular user logic
         $model = User::findOne(Yii::$app->user->id);
+
+        // Check how many tests the user has taken
+        $userTestCount = \common\models\UserTest::find()
+            ->andWhere(['user_id' => $model->id])
+            ->count();
+        if ($userTestCount == 5) {
+            return $this->redirect(['test']);
+        }
+
+        // Fetch subjects excluding the default ones
         $subjects = \common\models\Subject::find()
             ->select(['title', 'id'])
             ->andWhere(['not in', 'title', [
@@ -96,10 +109,12 @@ class SiteController extends Controller
             ->indexBy('id')
             ->column();
 
+        // Handle form submission
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {
 
             $model->save(false);
 
+            // Prepare the list of subjects for test assignment
             $defaultSubjectIds = \common\models\Subject::find()
                 ->select('id')
                 ->andWhere(['title' => [
@@ -108,9 +123,11 @@ class SiteController extends Controller
                     'Қазақстан Тарихы'
                 ]])
                 ->column();
-            $selectedSubjectIds = $model->subjects ?? [];
+            $selectedSubjectIds = array_filter([$model->subject_1, $model->subject_2]);
             $allSubjectIds = array_merge($defaultSubjectIds, $selectedSubjectIds);
+            \common\models\UserTest::deleteAll(['user_id' => $model->id]);
 
+            // Assign tests to the user
             foreach ($allSubjectIds as $subjectId) {
                 $test = \common\models\Test::find()
                     ->andWhere(['subject_id' => $subjectId])
@@ -118,17 +135,25 @@ class SiteController extends Controller
                     ->orderBy(new \yii\db\Expression('RAND()')) // MySQL
                     ->one();
                 
-                if (!$test) {
-                    continue;
-                }
+                if (!$test) continue;
 
                 $userTest = new \common\models\UserTest();
                 $userTest->user_id = $model->id;
                 $userTest->test_id = $test->id;
+                $userTest->start_time = date('Y-m-d H:i:s');
                 $userTest->save(false);
             }
 
-            return $this->redirect(['test']);
+            // Redirect to the first question of the first assigned test
+            $firstUserTest = \common\models\UserTest::find()
+                ->andWhere(['user_id' => $model->id])
+                ->with('test.questions')
+                ->orderBy('id ASC') // take the first inserted
+                ->one();
+
+            $firstQuestionId = $firstUserTest->test->questions[0]->id ?? null;
+
+            return $this->redirect(['test', 'id' => $firstQuestionId]);
         }
 
         return $this->render('index', [
@@ -137,13 +162,24 @@ class SiteController extends Controller
         ]);
     }
 
-    public function actionTest()
+    public function actionTest($id = null)
     {
         if(Yii::$app->user->isGuest){
             return $this->redirect(['site/login']);
         }
 
-        return $this->render('test');
+        $question = \common\models\Question::findOne($id);
+
+        $userId = Yii::$app->user->id;
+        $userTests = \common\models\UserTest::find()
+            ->andWhere(['user_id' => $userId])
+            ->with('test.questions') // eager load questions
+            ->all();
+
+        return $this->render('test', [
+            'question' => $question,
+            'userTests' => $userTests,
+        ]);
     }
 
     public function actionAdmin()

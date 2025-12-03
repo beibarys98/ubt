@@ -1,3 +1,8 @@
+/* Make dropdown prompts look muted like input placeholders */
+select.form-control option:first-child {
+    color: #6c757d;   /* Bootstrap muted gray */
+}
+
 main > .container, main > .container-fluid
 {
     padding: 70px 15px 20px;
