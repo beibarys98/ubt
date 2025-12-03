@@ -101,11 +101,7 @@ class SiteController extends Controller
         // Fetch subjects excluding the default ones
         $subjects = \common\models\Subject::find()
             ->select(['title', 'id'])
-            ->andWhere(['not in', 'title', [
-                'Оқу Сауаттылығы',
-                'Математикалық Сауаттылық',
-                'Қазақстан Тарихы'
-            ]])
+            ->andWhere(['not in', 'id', [4, 5, 6]]) // Exclude default subjects
             ->indexBy('id')
             ->column();
 
@@ -117,11 +113,7 @@ class SiteController extends Controller
             // Prepare the list of subjects for test assignment
             $defaultSubjectIds = \common\models\Subject::find()
                 ->select('id')
-                ->andWhere(['title' => [
-                    'Оқу Сауаттылығы',
-                    'Математикалық Сауаттылық',
-                    'Қазақстан Тарихы'
-                ]])
+                ->andWhere(['id' => [4, 5, 6]]) // IDs of default subjects
                 ->column();
             $selectedSubjectIds = array_filter([$model->subject_1, $model->subject_2]);
             $allSubjectIds = array_merge($defaultSubjectIds, $selectedSubjectIds);

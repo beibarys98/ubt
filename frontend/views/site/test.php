@@ -13,6 +13,43 @@ $this->title = 'UBT';
             <div class="p-3 card">
                 <img id="question-img" src="<?= Yii::getAlias('@web/') . $question->img_path ?>" class="img-fluid" alt="Question">
             </div>
+            <div class="p-3 card mt-3 mb-3">
+                <?php if ($question->type === 'single'): ?>
+                    <?php for ($i = 0; $i < 4; $i++): ?>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="answer" id="single<?= $i ?>" value="<?= $i ?>">
+                            <label class="form-check-label" for="single<?= $i ?>">
+                                Option <?= $i + 1 ?>
+                            </label>
+                        </div>
+                    <?php endfor; ?>
+
+                <?php elseif ($question->type === 'multiple'): ?>
+                    <?php for ($i = 0; $i < 6; $i++): ?>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="answer[]" id="multiple<?= $i ?>" value="<?= $i ?>">
+                            <label class="form-check-label" for="multiple<?= $i ?>">
+                                Option <?= $i + 1 ?>
+                            </label>
+                        </div>
+                    <?php endfor; ?>
+
+                <?php elseif ($question->type === 'match'): ?>
+                    <div class="row">
+                        <?php for ($i = 0; $i < 8; $i++): ?>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="answer[]" id="match<?= $i ?>" value="<?= $i ?>">
+                                    <label class="form-check-label" for="match<?= $i ?>">
+                                        Option <?= $i + 1 ?>
+                                    </label>
+                                </div>
+                            </div>
+                        <?php endfor; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
         </div>
 
         <!-- Right Column (30%) -->

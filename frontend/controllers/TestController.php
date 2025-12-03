@@ -131,22 +131,33 @@ class TestController extends Controller
                             $correctAnswer = null;
                         }
 
-                        $question->correct = $correctAnswer;
-
-
                         // Determine question type based on answer format
-                        if (!$correctAnswer) {
-                            $question->type = 'single'; // default
-                        } elseif (preg_match('/^[A-Z]$/i', $correctAnswer)) {
-                            $question->type = 'single';
-                        } elseif (preg_match('/^[A-Z]{2,}$/i', $correctAnswer)) {
-                            $question->type = 'multiple';
-                        } elseif (preg_match('/^([A-Z]-\d\s?)+$/i', $correctAnswer)) {
-                            $question->type = 'match';
-                        } else {
-                            $question->type = 'single'; // fallback
-                        }
+                        if ($correctAnswer) {
+                            if (str_contains($correctAnswer, '-')) {
+                                // Match question (any hyphen)
+                                $question->type = 'match';
+                                $correctAnswer = preg_replace('/[^A-Z0-9\-\s]/i', '', $correctAnswer);
+                            } else {
+                                // Keep only letters
+                                $lettersOnly = preg_replace('/[^A-Z]/', '', $correctAnswer);
 
+                                if (strlen($lettersOnly) === 1) {
+                                    $question->type = 'single';
+                                } elseif (strlen($lettersOnly) >= 2) {
+                                    $question->type = 'multiple';
+                                } else {
+                                    $question->type = 'single'; // fallback
+                                }
+
+                                // Remove duplicate letters
+                                $letters = str_split($lettersOnly);
+                                $uniqueLetters = array_unique($letters);
+                                $correctAnswer = implode('', $uniqueLetters);
+                            }
+                        } else {
+                            $question->type = 'single';
+                        }
+                        $question->correct = $correctAnswer;
                         $question->save();
                     }
 
