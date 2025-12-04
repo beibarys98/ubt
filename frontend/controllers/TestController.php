@@ -86,95 +86,115 @@ class TestController extends Controller
         return $this->redirect(Yii::$app->request->referrer);
     }
 
+    private function parseAnswers($text)
+    {
+        return preg_split("/\r\n|\n|\r/", trim($text));
+    }
 
-    /**
-     * Creates a new Test model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return string|\yii\web\Response
-     */
+    private function createQuestions($test, $images, $answers)
+    {
+        foreach ($images as $index => $file) {
+
+            $filePath = $this->saveQuestionImage($file);
+
+            $question = new Question();
+            $question->test_id  = $test->id;
+            $question->img_path = $filePath;
+
+            $rawAnswer = $answers[$index] ?? null;
+
+            [$type, $correct] = $this->detectTypeAndAnswer($rawAnswer);
+
+            $question->type    = $type;
+            $question->correct = $correct;
+
+            $question->save(false);
+        }
+    }
+
+    private function saveQuestionImage($file)
+    {
+        $uploadDir = Yii::getAlias('@webroot/uploads/questions');
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $fileName = time() . '_' . $file->name;
+        $filePath = $uploadDir . '/' . $fileName;
+
+        $file->saveAs($filePath);
+
+        return 'uploads/questions/' . $fileName;
+    }
+
+    private function detectTypeAndAnswer($line)
+    {
+        if (!$line) {
+            return ['single', null];
+        }
+
+        // Remove leading number
+        $answer = preg_replace('/^\d+[\.\)]?\s*/', '', trim($line));
+        $answer = strtoupper($answer);
+
+        // Cyrillic → Latin mapping
+        $map = [
+            'А' => 'A',
+            'В' => 'B',
+            'С' => 'C',
+            'Д' => 'D',
+        ];
+        $answer = strtr($answer, $map);
+
+        // ✅ MATCH TYPE
+        if (str_contains($answer, '-')) {
+            $clean = preg_replace('/[^A-Z0-9\-\s]/i', '', $answer);
+            return ['match', $clean];
+        }
+
+        // ✅ SINGLE / MULTIPLE
+        $lettersOnly = preg_replace('/[^A-Z]/', '', $answer);
+        $letters     = array_unique(str_split($lettersOnly));
+        $final       = implode(' ', $letters);
+
+        if (strlen($final) === 1) {
+            return ['single', $final];
+        }
+
+        if (strlen($final) >= 2) {
+            return ['multiple', $final];
+        }
+
+        return ['single', $final];
+    }
+
     public function actionCreate()
     {
         $model = new Test();
-
         $subjects = \common\models\Subject::find()->all();
 
-        if ($this->request->isPost) {
-            if ($model->load($this->request->post())) {
-
-                $model->images = \yii\web\UploadedFile::getInstances($model, 'images');
-                $answers = preg_split("/\r\n|\n|\r/", trim($model->answersText));
-
-                if ($model->save() && $model->validate()) {
-                    foreach ($model->images as $index => $file) {
-                        // Save uploaded file
-                        $uploadDir = Yii::getAlias('@webroot/uploads/questions');
-                        if (!is_dir($uploadDir)) {
-                            mkdir($uploadDir, 0755, true);
-                        }
-                        $fileName = time() . '_' . $file->name;
-                        $filePath = $uploadDir . '/' . $fileName;
-                        $file->saveAs($filePath);
-
-                        // Create Question record
-                        $question = new Question();
-                        $question->test_id = $model->id;
-                        $question->img_path = 'uploads/questions/' . $fileName;
-
-                        // Determine correct answer from pasted text
-                        $line = isset($answers[$index]) ? trim($answers[$index]) : null;
-
-                        if ($line) {
-                            // Remove leading number with OPTIONAL dot and OPTIONAL space
-                            $correctAnswer = preg_replace('/^\d+[\.\)]?\s*/', '', $line);
-                            $correctAnswer = strtoupper($correctAnswer);
-                        } else {
-                            $correctAnswer = null;
-                        }
-
-                        // Determine question type based on answer format
-                        if ($correctAnswer) {
-                            if (str_contains($correctAnswer, '-')) {
-                                // Match question (any hyphen)
-                                $question->type = 'match';
-                                $correctAnswer = preg_replace('/[^A-Z0-9\-\s]/i', '', $correctAnswer);
-                            } else {
-                                // Keep only letters
-                                $lettersOnly = preg_replace('/[^A-Z]/', '', $correctAnswer);
-
-                                if (strlen($lettersOnly) === 1) {
-                                    $question->type = 'single';
-                                } elseif (strlen($lettersOnly) >= 2) {
-                                    $question->type = 'multiple';
-                                } else {
-                                    $question->type = 'single'; // fallback
-                                }
-
-                                // Remove duplicate letters
-                                $letters = str_split($lettersOnly);
-                                $uniqueLetters = array_unique($letters);
-                                $correctAnswer = implode('', $uniqueLetters);
-                            }
-                        } else {
-                            $question->type = 'single';
-                        }
-                        $question->correct = $correctAnswer;
-                        $question->save();
-                    }
-
-                    return $this->redirect(['view', 'id' => $model->id]);
-                }
-
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-        } else {
+        if (!$this->request->isPost) {
             $model->loadDefaultValues();
+            return $this->render('create', compact('model', 'subjects'));
         }
 
-        return $this->render('create', [
-            'model' => $model,
-            'subjects' => $subjects,
-        ]);
+        if (!$model->load($this->request->post())) {
+            return $this->render('create', compact('model', 'subjects'));
+        }
+
+        $model->images  = \yii\web\UploadedFile::getInstances($model, 'images');
+        $answers        = $this->parseAnswers($model->answersText);
+
+        if (!$model->save()) {
+            return $this->render('create', compact('model', 'subjects'));
+        }
+
+        $this->createQuestions($model, $model->images, $answers);
+
+        return $this->redirect(['view', 'id' => $model->id]);
     }
+
 
     /**
      * Updates an existing Test model.

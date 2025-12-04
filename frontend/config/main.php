@@ -8,6 +8,7 @@ $params = array_merge(
 
 return [
     'name' => 'UBT',
+    'timeZone' => 'Asia/Tashkent',
 
     'id' => 'app-frontend',
     'basePath' => dirname(__DIR__),

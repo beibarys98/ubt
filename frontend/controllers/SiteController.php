@@ -70,6 +70,96 @@ class SiteController extends Controller
         ];
     }
 
+    private function redirectGuest()
+    {
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->response->redirect(['site/login'])->send();
+            Yii::$app->end();
+        }
+    }
+
+    private function redirectAdmin()
+    {
+        if (Yii::$app->user->identity->username === 'admin') {
+            Yii::$app->response->redirect(['user/index'])->send();
+            Yii::$app->end();
+        }
+    }
+
+    private function getCurrentUser()
+    {
+        return User::findOne(Yii::$app->user->id);
+    }
+
+    private function redirectIfTestsCompleted($userId)
+    {
+        $count = \common\models\UserTest::find()
+            ->andWhere(['user_id' => $userId])
+            ->count();
+
+        if ($count == 5) {
+            $firstUserTest = \common\models\UserTest::find()
+                ->andWhere(['user_id' => $userId])
+                ->with('test.questions')
+                ->orderBy('id ASC')
+                ->one();
+
+            $firstQuestionId = $firstUserTest->test->questions[0]->id ?? null;
+
+            Yii::$app->response->redirect(['site/test', 'id' => $firstQuestionId])->send();
+            Yii::$app->end();
+        }
+    }
+
+    private function getSelectableSubjects()
+    {
+        return \common\models\Subject::find()
+            ->select(['title', 'id'])
+            ->andWhere(['not in', 'id', [4, 5, 6]])
+            ->indexBy('id')
+            ->column();
+    }
+
+    private function saveUserAndAssignTests($model)
+    {
+        $model->save(false);
+
+        $defaultSubjectIds = [4, 5, 6];
+
+        $selectedSubjectIds = array_filter([$model->subject_1, $model->subject_2]);
+        $allSubjectIds = array_map('intval', array_merge($defaultSubjectIds, $selectedSubjectIds));
+        \common\models\UserTest::deleteAll(['user_id' => $model->id]);
+
+        foreach ($allSubjectIds as $subjectId) {
+
+            $test = \common\models\Test::find()
+                ->andWhere(['subject_id' => $subjectId, 'status' => 'public'])
+                ->orderBy(new \yii\db\Expression('RAND()'))
+                ->one();
+
+            if (!$test) continue;
+
+            $userTest = new \common\models\UserTest();
+            $userTest->user_id = $model->id;
+            $userTest->test_id = $test->id;
+            $userTest->start_time = date('Y-m-d H:i:s');
+            $userTest->save(false);
+        }
+    }
+
+    private function redirectToFirstQuestion($userId)
+    {
+        $firstUserTest = \common\models\UserTest::find()
+            ->andWhere(['user_id' => $userId])
+            ->with('test.questions')
+            ->orderBy('id ASC')
+            ->one();
+
+        $firstQuestionId = $firstUserTest->test->questions[0]->id ?? null;
+
+        return $this->redirect(['test', 'id' => $firstQuestionId]);
+    }
+
     /**
      * Displays homepage.
      *
@@ -77,82 +167,17 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        // Guest user redirection
-        if(Yii::$app->user->isGuest){
-            return $this->redirect(['site/login']);
-        }
+        $this->redirectGuest();
+        $this->redirectAdmin();
 
-        // Admin user redirection
-        if(Yii::$app->user->identity->username === 'admin'){
-            return $this->redirect(['user/index']);
-        }
-        
-        // Regular user logic
-        $model = User::findOne(Yii::$app->user->id);
+        $model = $this->getCurrentUser();
+        $this->redirectIfTestsCompleted($model->id);
 
-        // Check how many tests the user has taken
-        $userTestCount = \common\models\UserTest::find()
-            ->andWhere(['user_id' => $model->id])
-            ->count();
-        if ($userTestCount == 5) {
-            $firstUserTest = \common\models\UserTest::find()
-                ->andWhere(['user_id' => $model->id])
-                ->with('test.questions')
-                ->orderBy('id ASC') // take the first inserted
-                ->one();
+        $subjects = $this->getSelectableSubjects();
 
-            $firstQuestionId = $firstUserTest->test->questions[0]->id ?? null;
-            return $this->redirect(['test', 'id' => $firstQuestionId]); // All tests completed
-        }
-
-        // Fetch subjects excluding the default ones
-        $subjects = \common\models\Subject::find()
-            ->select(['title', 'id'])
-            ->andWhere(['not in', 'id', [4, 5, 6]]) // Exclude default subjects
-            ->indexBy('id')
-            ->column();
-
-        // Handle form submission
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {
-
-            $model->save(false);
-
-            // Prepare the list of subjects for test assignment
-            $defaultSubjectIds = \common\models\Subject::find()
-                ->select('id')
-                ->andWhere(['id' => [4, 5, 6]]) // IDs of default subjects
-                ->column();
-            $selectedSubjectIds = array_filter([$model->subject_1, $model->subject_2]);
-            $allSubjectIds = array_merge($defaultSubjectIds, $selectedSubjectIds);
-            \common\models\UserTest::deleteAll(['user_id' => $model->id]);
-
-            // Assign tests to the user
-            foreach ($allSubjectIds as $subjectId) {
-                $test = \common\models\Test::find()
-                    ->andWhere(['subject_id' => $subjectId])
-                    ->andWhere(['status' => 'public'])
-                    ->orderBy(new \yii\db\Expression('RAND()')) // MySQL
-                    ->one();
-                
-                if (!$test) continue;
-
-                $userTest = new \common\models\UserTest();
-                $userTest->user_id = $model->id;
-                $userTest->test_id = $test->id;
-                $userTest->start_time = date('Y-m-d H:i:s');
-                $userTest->save(false);
-            }
-
-            // Redirect to the first question of the first assigned test
-            $firstUserTest = \common\models\UserTest::find()
-                ->andWhere(['user_id' => $model->id])
-                ->with('test.questions')
-                ->orderBy('id ASC') // take the first inserted
-                ->one();
-
-            $firstQuestionId = $firstUserTest->test->questions[0]->id ?? null;
-
-            return $this->redirect(['test', 'id' => $firstQuestionId]);
+            $this->saveUserAndAssignTests($model);
+            return $this->redirectToFirstQuestion($model->id);
         }
 
         return $this->render('index', [
@@ -161,25 +186,211 @@ class SiteController extends Controller
         ]);
     }
 
-    public function actionTest($id = null)
+    private function getNextQuestionId($currentQuestionId, $userId)
     {
-        if(Yii::$app->user->isGuest){
-            return $this->redirect(['site/login']);
-        }
-
-        $question = \common\models\Question::findOne($id);
-
-        $userId = Yii::$app->user->id;
-        $userTests = \common\models\UserTest::find()
+        $questionIds = \common\models\UserTest::find()
             ->andWhere(['user_id' => $userId])
-            ->with('test.questions') // eager load questions
+            ->with('test.questions')
             ->all();
 
+        $allQuestionIds = [];
+        foreach ($questionIds as $ut) {
+            foreach ($ut->test->questions as $q) {
+                $allQuestionIds[] = $q->id;
+            }
+        }
+
+        $currentIndex = array_search($currentQuestionId, $allQuestionIds);
+
+        return $allQuestionIds[$currentIndex + 1] ?? $currentQuestionId;
+    }
+
+    private function getSavedAnswer($questionId)
+    {
+        return \common\models\UserQuestion::find()
+            ->select('answer')
+            ->andWhere([
+                'user_id' => Yii::$app->user->id,
+                'question_id' => $questionId
+            ])
+            ->scalar(); // returns string like "B" or "A-1 B-2"
+    }
+
+    private function getAnsweredIds($userId = null)
+    {
+        $userId = $userId ?? Yii::$app->user->id;
+
+        return \common\models\UserQuestion::find()
+            ->select('question_id')
+            ->andWhere(['user_id' => $userId])
+            ->column(); // returns array of question IDs
+    }
+
+    public function actionTest($id = null)
+    {
+        $this->redirectGuest();
+
+        $request = Yii::$app->request;
+        $userId  = Yii::$app->user->id;
+
+        $question = \common\models\Question::findOne($id);
+        if (!$question) {
+            throw new \yii\web\NotFoundHttpException('Question not found.');
+        }
+
+        // ✅ HANDLE FORM SUBMISSION
+        if ($request->isPost) {
+
+            $postAnswer = Yii::$app->request->post('answer');
+
+            // Check if user selected an answer
+            if (!$postAnswer || (is_array($postAnswer) && empty($postAnswer))) {
+                Yii::$app->session->setFlash('error', 'Жауап таңдаңыз!');
+                return $this->refresh();
+            }
+
+            // Normalize answers
+            if ($question->type === 'single') {
+                $finalAnswer = $postAnswer; // string
+            } else {
+                // multiple & match → array → space-separated string
+                $finalAnswer = implode(' ', $postAnswer);
+            }
+
+            // ✅ Remove old answers for this question (prevent duplicates)
+            \common\models\UserQuestion::deleteAll([
+                'user_id'     => $userId,
+                'question_id'=> $question->id,
+            ]);
+
+            // ✅ Save ONE ROW ONLY
+            $model = new \common\models\UserQuestion();
+            $model->user_id = $userId;
+            $model->question_id = $question->id;
+            $model->answer = $finalAnswer;
+            $model->save(false);
+
+            // ✅ Go to next question automatically
+            return $this->redirect(['site/test', 'id' => $this->getNextQuestionId($question->id, $userId)]);
+        }
+
+        $savedAnswer = $this->getSavedAnswer($question->id);
+
+        // ✅ Fetch tests for navigation
+        $userTests = \common\models\UserTest::find()
+            ->andWhere(['user_id' => $userId])
+            ->with('test.questions')
+            ->all();
+
+        $answeredIds = $this->getAnsweredIds($userId);
+
         return $this->render('test', [
-            'question' => $question,
+            'question'  => $question,
+            'savedAnswer' => $savedAnswer,
             'userTests' => $userTests,
+            'answeredIds' => $answeredIds,
         ]);
     }
+
+    private function calculateUserTestScore($userTest)
+    {
+        $userId = Yii::$app->user->id;
+        $score = 0;
+
+        foreach ($userTest->test->questions as $question) {
+            $userAnswer = \common\models\UserQuestion::findOne([
+                'user_id' => $userId,
+                'question_id' => $question->id
+            ]);
+
+            if (!$userAnswer) continue;
+
+            $correctAnswer = $question->correct;
+
+            // Compare answers (string comparison)
+            if ($question->type === 'single') {
+                // Single choice → 1 point if correct
+                if ($userAnswer->answer === $correctAnswer) {
+                    $score += 1;
+                }
+            } else {
+                // multiple or match → split into arrays
+                $userAnswersArray = explode(' ', $userAnswer->answer);
+                $correctAnswersArray = explode(' ', $correctAnswer);
+
+                $matches = array_intersect($userAnswersArray, $correctAnswersArray);
+
+                if (count($matches) === count($correctAnswersArray)) {
+                    // All correct → 2 points
+                    $score += 2;
+                } elseif (count($matches) > 0) {
+                    // At least one correct → 1 point
+                    $score += 1;
+                }
+                // else → 0 points
+            }
+        }
+
+        $userTest->score = $score;
+        $userTest->save(false);
+
+        return $score;
+    }
+
+
+
+    public function actionEndTest()
+    {
+        $userId = Yii::$app->user->id;
+
+        // 1️⃣ Get all active UserTests for this user
+        $activeTests = \common\models\UserTest::find()
+            ->andWhere(['user_id' => $userId, 'end_time' => null])
+            ->with('test.questions')
+            ->all();
+
+        if (!$activeTests) {
+            Yii::$app->session->setFlash('error', 'Белсенді тесттер жоқ.');
+            return $this->redirect(['site/index']);
+        }
+
+        // 2️⃣ Collect all question IDs from all tests
+        $allQuestionIds = [];
+        foreach ($activeTests as $ut) {
+            $questions = $ut->test->questions;
+            foreach ($questions as $q) {
+                $allQuestionIds[] = $q->id;
+            }
+        }
+
+        // 3️⃣ Get all answered question IDs for this user
+        $answeredIds = \common\models\UserQuestion::find()
+            ->select('question_id')
+            ->andWhere([
+                'user_id' => $userId,
+                'question_id' => $allQuestionIds
+            ])
+            ->column();
+
+        // 4️⃣ Check if user answered all questions
+        $unansweredCount = count($allQuestionIds) - count($answeredIds);
+        if ($unansweredCount > 0) {
+            Yii::$app->session->setFlash('error', 'Сұрақтарға жауап беріңіз! Қалған сұрақтар: ' . $unansweredCount);
+            // Optional: redirect to the first unanswered question
+            $firstUnanswered = array_diff($allQuestionIds, $answeredIds);
+            return $this->redirect(['site/test', 'id' => reset($firstUnanswered)]);
+        }
+
+        // 5️⃣ Mark as finished and calculate scores
+        foreach ($activeTests as $ut) {
+            $ut->end_time = date('Y-m-d H:i:s');
+            $this->calculateUserTestScore($ut);
+        }
+
+        Yii::$app->session->setFlash('success', 'Барлық тесттер аяқталды!');
+        return $this->redirect(['site/index']);
+    }
+
 
     public function actionAdmin()
     {

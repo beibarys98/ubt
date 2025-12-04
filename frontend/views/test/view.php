@@ -7,7 +7,7 @@ use yii\widgets\DetailView;
 /** @var yii\web\View $this */
 /** @var common\models\Test $model */
 
-$this->title = $model->subject->title . ' - Нұсқа ' . $model->version;
+$this->title = $model->subject->title . ' - Нұсқа ' . $model->version . ' - ' . count($model->questions) . ' сұрақ';
 $this->params['breadcrumbs'][] = ['label' => 'Tests', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
