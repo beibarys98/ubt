@@ -141,6 +141,7 @@ class TestController extends Controller
         // Cyrillic → Latin mapping
         $map = [
             'А' => 'A',
+            'Б' => 'B',
             'В' => 'B',
             'С' => 'C',
             'Д' => 'D',
@@ -149,20 +150,25 @@ class TestController extends Controller
 
         // ✅ MATCH TYPE
         if (str_contains($answer, '-')) {
-            $clean = preg_replace('/[^A-Z0-9\-\s]/i', '', $answer);
+            $clean = preg_replace('/[^A-Z0-9\-\s,;:.]/i', '', $answer);
+            $clean = preg_replace('/[,:;]/', ' ', $clean);
+            $clean = preg_replace('/\s+/', ' ', trim($clean));
+
             return ['match', $clean];
         }
 
         // ✅ SINGLE / MULTIPLE
-        $lettersOnly = preg_replace('/[^A-Z]/', '', $answer);
-        $letters     = array_unique(str_split($lettersOnly));
-        $final       = implode(' ', $letters);
+        $lettersOnly = preg_replace('/[^A-Z]/', '', $answer); // keep only letters
+        $allLetters  = str_split($lettersOnly);              // keep duplicates for counting
+        $unique      = array_unique($allLetters);            // for display
+        $final       = implode(' ', $unique);
 
-        if (strlen($final) === 1) {
+        // ✅ Determine single or multiple based on actual count (with duplicates)
+        if (count($allLetters) === 1) {
             return ['single', $final];
         }
 
-        if (strlen($final) >= 2) {
+        if (count($allLetters) >= 2) {
             return ['multiple', $final];
         }
 

@@ -345,14 +345,9 @@ class SiteController extends Controller
 
         // 1️⃣ Get all active UserTests for this user
         $activeTests = \common\models\UserTest::find()
-            ->andWhere(['user_id' => $userId, 'end_time' => null])
+            ->andWhere(['user_id' => $userId])
             ->with('test.questions')
             ->all();
-
-        if (!$activeTests) {
-            Yii::$app->session->setFlash('error', 'Белсенді тесттер жоқ.');
-            return $this->redirect(['site/index']);
-        }
 
         // 2️⃣ Collect all question IDs from all tests
         $allQuestionIds = [];
@@ -364,13 +359,7 @@ class SiteController extends Controller
         }
 
         // 3️⃣ Get all answered question IDs for this user
-        $answeredIds = \common\models\UserQuestion::find()
-            ->select('question_id')
-            ->andWhere([
-                'user_id' => $userId,
-                'question_id' => $allQuestionIds
-            ])
-            ->column();
+        $answeredIds = $this->getAnsweredIds($userId);
 
         // 4️⃣ Check if user answered all questions
         $unansweredCount = count($allQuestionIds) - count($answeredIds);
@@ -388,7 +377,24 @@ class SiteController extends Controller
         }
 
         Yii::$app->session->setFlash('success', 'Барлық тесттер аяқталды!');
-        return $this->redirect(['site/index']);
+        return $this->redirect(['site/end']);
+    }
+
+    public function actionEnd()
+    {
+        $this->redirectGuest();
+        $this->redirectAdmin();
+
+        $userId = Yii::$app->user->id;
+
+        $userTests = \common\models\UserTest::find()
+            ->andWhere(['user_id' => $userId])
+            ->with('test.subject')
+            ->all();
+
+        return $this->render('end', [
+            'userTests' => $userTests,
+        ]);
     }
 
 
