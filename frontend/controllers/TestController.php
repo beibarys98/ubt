@@ -120,7 +120,7 @@ class TestController extends Controller
             mkdir($uploadDir, 0755, true);
         }
 
-        $fileName = time() . '_' . $file->name;
+        $fileName = uniqid() . '.' . $file->extension;
         $filePath = $uploadDir . '/' . $fileName;
 
         $file->saveAs($filePath);

@@ -17,6 +17,8 @@ use frontend\models\PasswordResetRequestForm;
 use frontend\models\ResetPasswordForm;
 use frontend\models\SignupForm;
 use frontend\models\ContactForm;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
  * Site controller
@@ -91,25 +93,36 @@ class SiteController extends Controller
         return User::findOne(Yii::$app->user->id);
     }
 
-    private function redirectIfTestsCompleted($userId)
+    private function redirectByTestStatus($userId)
     {
-        $count = \common\models\UserTest::find()
-            ->andWhere(['user_id' => $userId])
-            ->count();
+        // Get latest test attempt
+        $userTest = \common\models\UserTest::find()
+            ->where(['user_id' => $userId])
+            ->orderBy(['id' => SORT_DESC])
+            ->with('test.questions')
+            ->one();
 
-        if ($count == 5) {
-            $firstUserTest = \common\models\UserTest::find()
-                ->andWhere(['user_id' => $userId])
-                ->with('test.questions')
-                ->orderBy('id ASC')
-                ->one();
-
-            $firstQuestionId = $firstUserTest->test->questions[0]->id ?? null;
-
-            Yii::$app->response->redirect(['site/test', 'id' => $firstQuestionId])->send();
-            Yii::$app->end();
+        // If user has no tests at all → send to first test
+        if (!$userTest) {
+            return true;
         }
+
+        // If test is NOT completed (no end_time)
+        if ($userTest->end_time === null) {
+
+            // Get the first question ID
+            $firstQuestionId = $userTest->test->questions[0]->id ?? null;
+
+            return Yii::$app->response->redirect([
+                'site/test',
+                'id' => $firstQuestionId
+            ])->send();
+        }
+
+        // Test IS completed → redirect to end page
+        return Yii::$app->response->redirect(['site/end'])->send();
     }
+
 
     private function getSelectableSubjects()
     {
@@ -171,7 +184,7 @@ class SiteController extends Controller
         $this->redirectAdmin();
 
         $model = $this->getCurrentUser();
-        $this->redirectIfTestsCompleted($model->id);
+        $this->redirectByTestStatus($model->id);
 
         $subjects = $this->getSelectableSubjects();
 
@@ -292,6 +305,110 @@ class SiteController extends Controller
         ]);
     }
 
+    private function exportTestResultsToExcel($activeTests)
+    {
+        $userId = Yii::$app->user->id;
+        $user = Yii::$app->user->identity;
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+
+        // --- 1. User name in A1 ---
+        $sheet->setCellValue('A1', $user->name);
+
+        // --- 2. Collect tests by subject ---
+        $subjects = [];
+        foreach ($activeTests as $userTest) {
+            $subjectName = $userTest->test->subject->title ?? 'Unknown';
+            $subjects[$subjectName][] = $userTest;
+        }
+
+        // --- 3. Write each subject in columns ---
+        $startCol = 3; // C = column 3
+        $subjectIndex = 0;
+
+        foreach ($subjects as $subjectName => $tests) {
+
+            $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startCol + $subjectIndex * 5);
+            $sheet->setCellValue("{$col}1", $subjectName); // Subject title in row 1
+
+            $row = 3; // start filling results from row 3
+
+            foreach ($tests as $userTest) {
+                foreach ($userTest->test->questions as $question) {
+
+                    // Get user answer
+                    $userAnswer = \common\models\UserQuestion::findOne([
+                        'user_id' => $userId,
+                        'question_id' => $question->id,
+                    ]);
+                    $userAnswerText = $userAnswer->answer ?? '';
+                    $correctAnswer = $question->correct;
+
+                    // Determine result
+                    if ($question->type === 'single') {
+                        $result = ($userAnswerText === $correctAnswer) ? '1' : '0';
+                    } else {
+                        $userArray = explode(' ', $userAnswerText);
+                        $correctArray = explode(' ', $correctAnswer);
+                        $matches = array_intersect($userArray, $correctArray);
+                        if (count($matches) === count($correctArray)) {
+                            $result = '+2';
+                        } elseif (count($matches) > 0) {
+                            $result = '+1';
+                        } else {
+                            $result = '0';
+                        }
+                    }
+
+                    // Fill row: Columns: subjectCol = Question, +1 = user answer, +2 = result
+                    $sheet->setCellValue("{$col}{$row}", $userAnswerText);
+                    $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startCol + $subjectIndex * 5 + 1) . $row, $correctAnswer);
+                    $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startCol + $subjectIndex * 5 + 2) . $row, $result);
+
+                    // Optional: Apply colors to result
+                    $color = null;
+                    if ($result === '+2' or $result === '1') $color = 'FF00FF00';
+                    elseif ($result === '+1') $color = 'FFFFA500';
+                    elseif ($result === '0') $color = 'FFFF0000';
+                    if ($color) {
+                        $sheet->getStyle(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startCol + $subjectIndex * 5 + 2) . $row)
+                            ->getFill()
+                            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                            ->getStartColor()->setARGB($color);
+                    }
+
+                    $row++;
+                }
+            }
+
+            $subjectIndex++;
+        }
+
+        // Output the file
+        $filename = uniqid() . '.xlsx';
+
+        // Absolute path where file will be saved
+        $saveDir = Yii::getAlias('@frontend/web/excels/');
+        if (!is_dir($saveDir)) {
+            mkdir($saveDir, 0775, true);
+        }
+
+        $absolutePath = $saveDir . $filename;
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($absolutePath);
+
+        // Save in result_file table
+        $resultFile = new \common\models\ResultFile();
+        $resultFile->user_id = $userId;
+        $resultFile->file_path = '/excels/' . $filename; // relative URL
+        $resultFile->save(false);
+
+        return true;
+    }
+
     private function calculateUserTestScore($userTest)
     {
         $userId = Yii::$app->user->id;
@@ -376,7 +493,14 @@ class SiteController extends Controller
             $this->calculateUserTestScore($ut);
         }
 
-        Yii::$app->session->setFlash('success', 'Барлық тесттер аяқталды!');
+        // Export Excel file
+        $this->exportTestResultsToExcel($activeTests);
+
+        // Delete all user answers for this test
+        \common\models\UserQuestion::deleteAll([
+            'user_id'   => $userId
+        ]);
+
         return $this->redirect(['site/end']);
     }
 
@@ -392,8 +516,14 @@ class SiteController extends Controller
             ->with('test.subject')
             ->all();
 
+        // Sum all scores using SQL
+        $totalScore = \common\models\UserTest::find()
+            ->andWhere(['user_id' => $userId])
+            ->sum('score');
+
         return $this->render('end', [
             'userTests' => $userTests,
+            'totalScore' => $totalScore,
         ]);
     }
 
