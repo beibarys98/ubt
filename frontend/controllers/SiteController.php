@@ -97,7 +97,7 @@ class SiteController extends Controller
     {
         // Get latest test attempt
         $userTest = \common\models\UserTest::find()
-            ->where(['user_id' => $userId])
+            ->andWhere(['user_id' => $userId])
             ->orderBy(['id' => SORT_DESC])
             ->with('test.questions')
             ->one();
@@ -333,7 +333,20 @@ class SiteController extends Controller
             $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startCol + $subjectIndex * 5);
             $sheet->setCellValue("{$col}1", $subjectName); // Subject title in row 1
 
-            $row = 3; // start filling results from row 3
+
+            $sheet->setCellValue(
+                \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startCol + $subjectIndex * 5) . "3",
+                'Дұрыс Жауап'
+            );
+            $sheet->setCellValue(
+                \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startCol + $subjectIndex * 5 + 1) . "3",
+                'Берілген жауап'
+            );
+            $sheet->setCellValue(
+                \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($startCol + $subjectIndex * 5 + 2) . "3",
+                'Нәтиже'
+            );
+            $row = 4; // start filling results from row 3
 
             foreach ($tests as $userTest) {
                 foreach ($userTest->test->questions as $question) {

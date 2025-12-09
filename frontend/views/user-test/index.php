@@ -23,27 +23,39 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
 
-    <?= GridView::widget([
-        'dataProvider' => $dataProvider,
-        'filterModel' => $searchModel,
-        'pager' => [
-            'class' => \yii\bootstrap5\LinkPager::class,
+<?= GridView::widget([
+    'dataProvider' => $dataProvider,
+    'filterModel'  => $searchModel,
+    'columns' => [
+        [
+            'attribute' => 'name',
+            'label' => 'User',
         ],
-        'columns' => [
-            ['attribute' => 'id', 'options' => ['style' => 'width:5%;']],
-            'user_id',
-            'test_id',
-            'start_time',
-            'end_time',
-            ['attribute' => 'score', 'options' => ['style' => 'width:5%;']],
-            [
-                'class' => ActionColumn::className(),
-                'urlCreator' => function ($action, UserTest $model, $key, $index, $column) {
-                    return Url::toRoute([$action, 'id' => $model->id]);
-                 }
-            ],
+        [
+            'attribute' => 'start_time',
+            'label' => 'Start Time',
         ],
-    ]); ?>
+        [
+            'attribute' => 'end_time',
+            'label' => 'End Time',
+        ],
+        [
+            'attribute' => 'total_score',
+            'label' => 'Total Score',
+        ],
+        [
+            'label' => 'File',
+            'format' => 'raw',
+            'value' => function ($user) {
+                return $user->resultFile && $user->resultFile->file_path
+                    ? Html::a('Download', [$user->resultFile->file_path], ['target' => '_blank'])
+                    : 'No File';
+            }
+        ],
+    ],
+]); ?>
+
+
 
 
 </div>

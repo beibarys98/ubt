@@ -152,4 +152,14 @@ class User extends ActiveRecord implements IdentityInterface
     {
         $this->auth_key = Yii::$app->security->generateRandomString();
     }
+
+    public function getUserTests()
+    {
+        return $this->hasMany(\common\models\UserTest::class, ['user_id' => 'id']);
+    }
+
+    public function getResultFile()
+    {
+        return $this->hasOne(\common\models\ResultFile::class, ['user_id' => 'id']);
+    }
 }

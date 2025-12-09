@@ -5,8 +5,6 @@
 $this->title = "Нәтиже";
 ?>
 
-<h1>Нәтиже</h1>
-
 <table class="table table-bordered">
 
     <tbody>

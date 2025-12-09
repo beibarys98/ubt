@@ -3,7 +3,7 @@
 namespace frontend\controllers;
 
 use common\models\UserTest;
-use common\models\search\UserTestSearch;
+use Yii;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -38,14 +38,16 @@ class UserTestController extends Controller
      */
     public function actionIndex()
     {
-        $searchModel = new UserTestSearch();
-        $dataProvider = $searchModel->search($this->request->queryParams);
+        $searchModel = new \common\models\search\UserResultSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
         ]);
     }
+
+
 
     /**
      * Displays a single UserTest model.
