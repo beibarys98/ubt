@@ -4,20 +4,18 @@ namespace common\models\search;
 
 use yii\data\ActiveDataProvider;
 use common\models\User;
-use yii\db\Expression;
 
 class UserResultSearch extends User
 {
     public $total_score;
     public $start_time;
-    public $end_time;
 
     public function rules()
     {
         return [
             [['name'], 'safe'],
-            [['total_score'], 'integer'],
-            [['start_time', 'end_time'], 'safe'],
+            [['id', 'total_score'], 'integer'],
+            [['start_time'], 'safe'],
         ];
     }
 
@@ -38,9 +36,9 @@ class UserResultSearch extends User
             'query' => $query,
             'sort' => [
                 'attributes' => [
+                    'id',
                     'name',
                     'start_time',
-                    'end_time',
                     'total_score',
                 ],
             ],
@@ -55,18 +53,15 @@ class UserResultSearch extends User
         }
 
         // filtering
+        $query->andFilterWhere(['like', 'user.id', $this->id]);
         $query->andFilterWhere(['like', 'user.name', $this->name]);
 
         if ($this->start_time) {
-            $query->andHaving(['>=', 'start_time', $this->start_time]);
-        }
-
-        if ($this->end_time) {
-            $query->andHaving(['<=', 'end_time', $this->end_time]);
+            $query->andHaving(['like', 'start_time', $this->start_time]);
         }
 
         if ($this->total_score) {
-            $query->andHaving(['>=', 'total_score', $this->total_score]);
+            $query->andHaving(['like', 'total_score', $this->total_score]);
         }
 
         return $dataProvider;

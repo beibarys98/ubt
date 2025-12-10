@@ -12,6 +12,10 @@ class User extends ActiveRecord implements IdentityInterface
     public $subject_1;
     public $subject_2;
 
+    public $start_time;
+    public $end_time;
+    public $total_score;
+
     /**
      * {@inheritdoc}
      */
@@ -160,6 +164,8 @@ class User extends ActiveRecord implements IdentityInterface
 
     public function getResultFile()
     {
-        return $this->hasOne(\common\models\ResultFile::class, ['user_id' => 'id']);
+        return $this->hasOne(\common\models\ResultFile::class, ['user_id' => 'id'])
+            ->orderBy(['id' => SORT_DESC]);   // latest file
     }
+
 }
